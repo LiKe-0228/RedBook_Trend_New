@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "XHS Note Rank Exporter",
+  "version": "0.1.0",
+  "description": "从小红书千帆市场行情-笔记排行页面采集数据并导出为 CSV。",
+  "permissions": [
+    "scripting",
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://ark.xiaohongshu.com/app-datacenter/market/note-rank*"
+  ],
+  "action": {
+    "default_title": "导出笔记排行数据"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://ark.xiaohongshu.com/app-datacenter/market/note-rank*"
+      ],
+      "js": [
+        "note-rank-content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
