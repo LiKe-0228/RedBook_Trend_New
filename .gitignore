@@ -1,0 +1,7 @@
+# 本地私密配置（包含飞书密钥等），不要提交到 Git
+config_local.py
+
+# Python 常见忽略项
+__pycache__/
+*.pyc
+
