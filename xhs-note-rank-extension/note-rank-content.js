@@ -588,6 +588,10 @@ function ensureSidePanel() {
       <button id="xhs-account-rank-btn-clear" style="width:100%;padding:3px 6px;font-size:12px;cursor:pointer;">清空账号缓存</button>
     </div>
 
+    <div style="margin-bottom:6px;">
+      <button id="xhs-scroll-to-bottom" style="width:100%;padding:3px 6px;font-size:12px;cursor:pointer;">滚动到页面底部</button>
+    </div>
+
     <div id="xhs-note-rank-status" style="min-height:1.2em;color:#6b7280;"></div>
   `;
 
@@ -606,6 +610,7 @@ function ensureSidePanel() {
   const btnAccountClear = document.getElementById(
     "xhs-account-rank-btn-clear"
   );
+  const btnScrollBottom = document.getElementById("xhs-scroll-to-bottom");
 
   if (btnToggleFirst) {
     btnToggleFirst.addEventListener("click", () => {
@@ -680,6 +685,34 @@ function ensureSidePanel() {
     });
   }
 
+  if (btnScrollBottom) {
+    btnScrollBottom.addEventListener("click", () => {
+      // 优先滚动主内容容器（小红书行情页的挂载容器）
+      const container =
+        document.getElementById("ark-app-datacenterark-mount-container");
+
+      const scrollElement =
+        container ||
+        document.scrollingElement ||
+        document.documentElement ||
+        document.body;
+
+      const targetTop =
+        (scrollElement && scrollElement.scrollHeight) ||
+        document.body.scrollHeight ||
+        0;
+
+      try {
+        scrollElement.scrollTo({
+          top: targetTop,
+          behavior: "smooth"
+        });
+      } catch (_e) {
+        scrollElement.scrollTop = targetTop;
+      }
+    });
+  }
+
   updatePanelRowCount();
   updateAccountPanelRowCount();
   updatePanelStatus("");
@@ -707,4 +740,3 @@ if (document.readyState === "loading") {
 } else {
   ensureSidePanel();
 }
-
