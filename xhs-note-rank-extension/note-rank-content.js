@@ -629,6 +629,7 @@ function ensureSidePanel() {
     <div style="margin-bottom:4px;display:flex;flex-wrap:wrap;gap:4px;">
       <button id="xhs-note-rank-btn-collect" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">采集内容当前页</button>
       <button id="xhs-note-rank-btn-download" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">导出内容 CSV</button>
+      <button id="xhs-note-rank-btn-upload" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">上传内容榜到飞书</button>
     </div>
     <div style="margin-bottom:8px;">
       <button id="xhs-note-rank-btn-clear" style="width:100%;padding:3px 6px;font-size:12px;cursor:pointer;">清空内容缓存</button>
@@ -641,14 +642,15 @@ function ensureSidePanel() {
     <div style="margin-bottom:4px;display:flex;flex-wrap:wrap;gap:4px;">
       <button id="xhs-account-rank-btn-collect" style="flex:1.5 0 120px;padding:3px 6px;font-size:12px;cursor:pointer;">采集成交榜账号当前页</button>
       <button id="xhs-account-rank-btn-download" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">导出账号 CSV</button>
+      <button id="xhs-account-rank-btn-upload" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">上传账号榜到飞书</button>
     </div>
     <div style="margin-bottom:4px;">
       <button id="xhs-account-rank-btn-clear" style="width:100%;padding:3px 6px;font-size:12px;cursor:pointer;">清空账号缓存</button>
     </div>
 
     <div style="margin-bottom:4px;display:flex;flex-wrap:wrap;gap:4px;">
-      <button id="xhs-scroll-to-top" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">滚动到页面顶部</button>
       <button id="xhs-scroll-to-bottom" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">滚动到页面底部</button>
+      <button id="xhs-scroll-to-top" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">滚动到页面顶部</button>
     </div>
 
     <div id="xhs-note-rank-status" style="min-height:1.2em;color:#6b7280;"></div>
@@ -659,12 +661,16 @@ function ensureSidePanel() {
   const btnToggleFirst = document.getElementById("xhs-toggle-first-row");
   const btnCollect = document.getElementById("xhs-note-rank-btn-collect");
   const btnDownload = document.getElementById("xhs-note-rank-btn-download");
+  const btnUpload = document.getElementById("xhs-note-rank-btn-upload");
   const btnClear = document.getElementById("xhs-note-rank-btn-clear");
   const btnAccountCollect = document.getElementById(
     "xhs-account-rank-btn-collect"
   );
   const btnAccountDownload = document.getElementById(
     "xhs-account-rank-btn-download"
+  );
+  const btnAccountUpload = document.getElementById(
+    "xhs-account-rank-btn-upload"
   );
   const btnAccountClear = document.getElementById(
     "xhs-account-rank-btn-clear"
