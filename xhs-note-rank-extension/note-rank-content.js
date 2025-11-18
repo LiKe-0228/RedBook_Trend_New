@@ -612,8 +612,9 @@ function ensureSidePanel() {
     'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   panel.style.fontSize = "12px";
   panel.style.color = "#1f2933";
-  panel.style.minWidth = "360px";
-  panel.style.maxWidth = "400px";
+  panel.style.width = "300px";
+  panel.style.minWidth = "280px";
+  panel.style.maxWidth = "320px";
 
   panel.innerHTML = `
     <div style="margin-bottom:6px;">
@@ -629,7 +630,7 @@ function ensureSidePanel() {
     <div style="margin-bottom:4px;display:flex;flex-wrap:wrap;gap:4px;">
       <button id="xhs-note-rank-btn-collect" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">采集内容当前页</button>
       <button id="xhs-note-rank-btn-download" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">导出内容 CSV</button>
-      <button id="xhs-note-rank-btn-upload" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">上传内容榜到飞书</button>
+      <button id="xhs-note-rank-btn-upload" style="flex:0 0 100%;max-width:100%";padding:3px 6px;font-size:12px;cursor:pointer;">上传内容榜到飞书</button>
     </div>
     <div style="margin-bottom:8px;">
       <button id="xhs-note-rank-btn-clear" style="width:100%;padding:3px 6px;font-size:12px;cursor:pointer;">清空内容缓存</button>
@@ -642,7 +643,7 @@ function ensureSidePanel() {
     <div style="margin-bottom:4px;display:flex;flex-wrap:wrap;gap:4px;">
       <button id="xhs-account-rank-btn-collect" style="flex:1.5 0 120px;padding:3px 6px;font-size:12px;cursor:pointer;">采集成交榜账号当前页</button>
       <button id="xhs-account-rank-btn-download" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">导出账号 CSV</button>
-      <button id="xhs-account-rank-btn-upload" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">上传账号榜到飞书</button>
+      <button id="xhs-account-rank-btn-upload" style="flex:0 0 100%;max-width:100%";padding:3px 6px;font-size:12px;cursor:pointer;">上传账号榜到飞书</button>
     </div>
     <div style="margin-bottom:4px;">
       <button id="xhs-account-rank-btn-clear" style="width:100%;padding:3px 6px;font-size:12px;cursor:pointer;">清空账号缓存</button>
@@ -853,3 +854,4 @@ if (document.readyState === "loading") {
     adjustScrollButtonsOrder();
   }
 })();
+

@@ -31,6 +31,14 @@
   }
 
   function attachUploadButtons(panel) {
+    // 调整账号采集按钮文案
+    const accountCollectBtn = panel.querySelector(
+      "#xhs-account-rank-btn-collect"
+    );
+    if (accountCollectBtn) {
+      accountCollectBtn.textContent = "采集账号当前页";
+    }
+
     // 内容榜上传按钮：单独一行，全宽
     const noteDownloadBtn = panel.querySelector("#xhs-note-rank-btn-download");
     if (noteDownloadBtn && !panel.querySelector("#xhs-note-rank-btn-upload")) {
@@ -55,7 +63,7 @@
       }
     }
 
-    // 账号榜上传按钮：与账号相关按钮在同一行
+    // 账号榜上传按钮：单独一行，全宽
     const accountDownloadBtn = panel.querySelector(
       "#xhs-account-rank-btn-download"
     );
@@ -63,20 +71,24 @@
       accountDownloadBtn &&
       !panel.querySelector("#xhs-account-rank-btn-upload")
     ) {
+      const row = accountDownloadBtn.closest("div");
+      const uploadRow = document.createElement("div");
+      uploadRow.style.marginBottom = "4px";
+
       const uploadBtn = document.createElement("button");
       uploadBtn.id = "xhs-account-rank-btn-upload";
       uploadBtn.textContent = "上传账号榜到飞书";
-      uploadBtn.style.flex = "1 0 90px";
+      uploadBtn.style.width = "100%";
       uploadBtn.style.padding = "3px 6px";
       uploadBtn.style.fontSize = "12px";
       uploadBtn.style.cursor = "pointer";
 
-      const row = accountDownloadBtn.closest("div");
-      if (row) {
-        row.style.display = "flex";
-        row.style.flexWrap = "wrap";
-        row.style.gap = "4px";
-        row.appendChild(uploadBtn);
+      uploadRow.appendChild(uploadBtn);
+      if (row && row.parentNode) {
+        row.parentNode.insertBefore(uploadRow, row.nextSibling);
+      } else {
+        const statusEl = panel.querySelector("#xhs-note-rank-status");
+        panel.insertBefore(uploadRow, statusEl || null);
       }
     }
 
@@ -170,4 +182,3 @@
     waitForPanel(attachUploadButtons);
   }
 })();
-
