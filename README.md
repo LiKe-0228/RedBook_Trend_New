@@ -192,3 +192,12 @@ python3 test_single_upload.py
 
 以后只要记住这三步：**改好 config_local → 跑 feishu_api → 加载扩展并在榜单页面点采集+上传**，就可以复用整个链路。
 
+# 飞书api接口文档
+
+## 多维表格查询接口
+
+https://open.feishu.cn/document/docs/bitable-v1/app-table-record/search?appId=cli_a9933a6eae71500e
+
+## app token查询 （object token）
+
+https://open.feishu.cn/document/server-docs/docs/wiki-v2/space-node/get_node?appId=cli_a9933a6eae71500e
