@@ -4,8 +4,7 @@ import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable
-from typing import List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 DB_PATH = Path("data/xhs_rank.db")
 
@@ -182,16 +181,6 @@ def insert_account_rows(
   return len(payload)
 
 
-def _paginate_and_total(conn: sqlite3.Connection, base_sql: str, params: Tuple[Any, ...], page: int, page_size: int) -> Tuple[List[sqlite3.Row], int]:
-  """Execute paginated query and return rows plus total count."""
-  offset = (page - 1) * page_size
-  paginated_sql = base_sql + " LIMIT ? OFFSET ?"
-  cursor = conn.execute(paginated_sql, params + (page_size, offset))
-  rows = cursor.fetchall()
-  total = conn.execute("SELECT COUNT(1) FROM (" + base_sql + ")", params).fetchone()[0]
-  return rows, total
-
-
 def list_note_rows(
   db_path: Path = DB_PATH,
   q: str | None = None,
@@ -202,28 +191,38 @@ def list_note_rows(
 ) -> Tuple[List[Dict[str, Any]], int]:
   """List note_rank rows with simple filters and pagination."""
   init_db_if_needed(db_path)
+  offset = (page - 1) * page_size
   with sqlite3.connect(db_path) as conn:
     conn.row_factory = sqlite3.Row
-    filters = []
-    params: Tuple[Any, ...] = tuple()
-
-    base_sql = "SELECT * FROM note_rank WHERE 1=1"
-
+    conditions = ["1=1"]
+    params: List[Any] = []
     if q:
-      filters.append(" AND (title LIKE ? OR nickname LIKE ?)")
-      params += (f"%{q}%", f"%{q}%")
+      conditions.append("(title LIKE ? OR nickname LIKE ?)")
+      params.extend((f"%{q}%", f"%{q}%"))
     if fetch_date_from:
-      filters.append(" AND fetch_date >= ?")
-      params += (fetch_date_from,)
+      conditions.append("fetch_date >= ?")
+      params.append(fetch_date_from)
     if fetch_date_to:
-      filters.append(" AND fetch_date <= ?")
-      params += (fetch_date_to,)
+      conditions.append("fetch_date <= ?")
+      params.append(fetch_date_to)
 
-    order_sql = " ORDER BY fetch_date DESC, created_at DESC"
-    base_sql += "".join(filters) + order_sql
+    where_sql = " WHERE " + " AND ".join(conditions)
+    query_sql = (
+      "SELECT * FROM note_rank"
+      + where_sql
+      + " ORDER BY fetch_date DESC, created_at DESC LIMIT ? OFFSET ?"
+    )
+    params_tuple = tuple(params)
+    rows = conn.execute(query_sql, (*params_tuple, page_size, offset)).fetchall()
+    count_sql = "SELECT COUNT(1) FROM note_rank" + where_sql
+    total = conn.execute(count_sql, params_tuple).fetchone()[0]
 
-    rows, total = _paginate_and_total(conn, base_sql, params, page, page_size)
-    return [dict(r) for r in rows], total
+    items: List[Dict[str, Any]] = []
+    for idx, row in enumerate(rows):
+      record = dict(row)
+      record["rank"] = offset + idx + 1
+      items.append(record)
+    return items, total
 
 
 def list_account_rows(
@@ -236,28 +235,38 @@ def list_account_rows(
 ) -> Tuple[List[Dict[str, Any]], int]:
   """List account_rank rows with simple filters and pagination."""
   init_db_if_needed(db_path)
+  offset = (page - 1) * page_size
   with sqlite3.connect(db_path) as conn:
     conn.row_factory = sqlite3.Row
-    filters = []
-    params: Tuple[Any, ...] = tuple()
-
-    base_sql = "SELECT * FROM account_rank WHERE 1=1"
-
+    conditions = ["1=1"]
+    params: List[Any] = []
     if q:
-      filters.append(" AND (shop_name LIKE ?)")
-      params += (f"%{q}%",)
+      conditions.append("(shop_name LIKE ?)")
+      params.append(f"%{q}%")
     if fetch_date_from:
-      filters.append(" AND fetch_date >= ?")
-      params += (fetch_date_from,)
+      conditions.append("fetch_date >= ?")
+      params.append(fetch_date_from)
     if fetch_date_to:
-      filters.append(" AND fetch_date <= ?")
-      params += (fetch_date_to,)
+      conditions.append("fetch_date <= ?")
+      params.append(fetch_date_to)
 
-    order_sql = " ORDER BY fetch_date DESC, created_at DESC"
-    base_sql += "".join(filters) + order_sql
+    where_sql = " WHERE " + " AND ".join(conditions)
+    query_sql = (
+      "SELECT * FROM account_rank"
+      + where_sql
+      + " ORDER BY fetch_date DESC, created_at DESC LIMIT ? OFFSET ?"
+    )
+    params_tuple = tuple(params)
+    rows = conn.execute(query_sql, (*params_tuple, page_size, offset)).fetchall()
+    count_sql = "SELECT COUNT(1) FROM account_rank" + where_sql
+    total = conn.execute(count_sql, params_tuple).fetchone()[0]
 
-    rows, total = _paginate_and_total(conn, base_sql, params, page, page_size)
-    return [dict(r) for r in rows], total
+    items: List[Dict[str, Any]] = []
+    for idx, row in enumerate(rows):
+      record = dict(row)
+      record["rank"] = offset + idx + 1
+      items.append(record)
+    return items, total
 
 
 def list_audit_logs(
@@ -271,28 +280,33 @@ def list_audit_logs(
 ) -> Tuple[List[Dict[str, Any]], int]:
   """List audit_log rows with simple filters and pagination."""
   init_db_if_needed(db_path)
+  offset = (page - 1) * page_size
   with sqlite3.connect(db_path) as conn:
     conn.row_factory = sqlite3.Row
-    filters = []
-    params: Tuple[Any, ...] = tuple()
-
-    base_sql = "SELECT * FROM audit_log WHERE 1=1"
-
+    conditions = ["1=1"]
+    params: List[Any] = []
     if action:
-      filters.append(" AND action = ?")
-      params += (action,)
+      conditions.append("action = ?")
+      params.append(action)
     if detail_q:
-      filters.append(" AND detail LIKE ?")
-      params += (f"%{detail_q}%",)
+      conditions.append("detail LIKE ?")
+      params.append(f"%{detail_q}%")
     if created_from:
-      filters.append(" AND created_at >= ?")
-      params += (created_from,)
+      conditions.append("created_at >= ?")
+      params.append(created_from)
     if created_to:
-      filters.append(" AND created_at <= ?")
-      params += (created_to,)
+      conditions.append("created_at <= ?")
+      params.append(created_to)
 
-    order_sql = " ORDER BY created_at DESC"
-    base_sql += "".join(filters) + order_sql
+    where_sql = " WHERE " + " AND ".join(conditions)
+    query_sql = (
+      "SELECT * FROM audit_log"
+      + where_sql
+      + " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+    )
+    params_tuple = tuple(params)
+    rows = conn.execute(query_sql, (*params_tuple, page_size, offset)).fetchall()
+    count_sql = "SELECT COUNT(1) FROM audit_log" + where_sql
+    total = conn.execute(count_sql, params_tuple).fetchone()[0]
 
-    rows, total = _paginate_and_total(conn, base_sql, params, page, page_size)
     return [dict(r) for r in rows], total

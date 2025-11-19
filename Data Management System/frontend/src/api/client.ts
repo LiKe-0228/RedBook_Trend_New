@@ -26,6 +26,7 @@ export type AuditLogItem = {
 
 export type NoteRankItem = {
   uuid: string;
+  rank: number;
   title: string;
   nickname: string;
   publish_time: string;
@@ -39,6 +40,7 @@ export type NoteRankItem = {
 
 export type AccountRankItem = {
   uuid: string;
+  rank: number;
   shop_name: string;
   fans_count: string;
   read_count: string;

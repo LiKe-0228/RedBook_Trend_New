@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   Form,
@@ -10,7 +10,9 @@ import {
   Tag
 } from "antd";
 import type { ColumnsType, TablePaginationConfig } from "antd/es/table";
-import dayjs, { Dayjs } from "dayjs";
+import type { FilterDropdownProps } from "antd/es/table/interface";
+import { SearchOutlined } from "@ant-design/icons";
+import type { Dayjs } from "dayjs";
 import { api, AccountRankItem, ListResponse } from "../api/client";
 
 type Filters = {
@@ -32,52 +34,170 @@ export default function AccountRankPage() {
     pageSize: 20
   });
   const [filters, setFilters] = useState<Filters>({});
+  const [columnSearch, setColumnSearch] = useState<Record<string, string>>({});
+
+  const handleColumnSearch = useCallback(
+    (
+      dataIndex: keyof AccountRankItem,
+      value: string,
+      confirm: FilterDropdownProps<AccountRankItem>["confirm"]
+    ) => {
+      setColumnSearch((prev) => ({
+        ...prev,
+        [dataIndex as string]: value
+      }));
+      confirm();
+    },
+    []
+  );
+
+  const handleColumnReset = useCallback(
+    (
+      dataIndex: keyof AccountRankItem,
+      clearFilters?: () => void,
+      confirm?: FilterDropdownProps<AccountRankItem>["confirm"]
+    ) => {
+      setColumnSearch((prev) => {
+        const next = { ...prev };
+        delete next[dataIndex as string];
+        return next;
+      });
+      clearFilters?.();
+      confirm?.({ closeDropdown: true });
+    },
+    []
+  );
+
+  const getColumnSearchProps = useCallback(
+    (dataIndex: keyof AccountRankItem) => ({
+      filterDropdown: ({
+        setSelectedKeys,
+        selectedKeys,
+        confirm,
+        clearFilters,
+        close
+      }: FilterDropdownProps<AccountRankItem>) => (
+        <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+          <Input
+            placeholder="输入关键词"
+            value={(selectedKeys[0] as string) || ""}
+            onChange={(e) =>
+              setSelectedKeys(e.target.value ? [e.target.value] : [])
+            }
+            onPressEnter={() =>
+              handleColumnSearch(
+                dataIndex,
+                (selectedKeys[0] as string) || "",
+                confirm
+              )
+            }
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              size="small"
+              onClick={() =>
+                handleColumnSearch(
+                  dataIndex,
+                  (selectedKeys[0] as string) || "",
+                  confirm
+                )
+              }
+            >
+              搜索
+            </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                setSelectedKeys([]);
+                handleColumnReset(dataIndex, clearFilters, confirm);
+              }}
+            >
+              重置
+            </Button>
+            <Button type="link" size="small" onClick={() => close()}>
+              关闭
+            </Button>
+          </Space>
+        </div>
+      ),
+      filterIcon: (filtered: boolean) => (
+        <SearchOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
+      ),
+      onFilter: (value: string | number | boolean, record: AccountRankItem) => {
+        const raw = record[dataIndex];
+        const text =
+          raw === null || raw === undefined ? "" : String(raw).toLowerCase();
+        return text.includes(String(value ?? "").toLowerCase());
+      },
+      filteredValue: columnSearch[dataIndex as string]
+        ? [columnSearch[dataIndex as string]]
+        : null
+    }),
+    [columnSearch, handleColumnReset, handleColumnSearch]
+  );
 
   const columns: ColumnsType<AccountRankItem> = useMemo(
     () => [
       {
+        title: "排名",
+        dataIndex: "rank",
+        width: 80,
+        sorter: (a, b) => a.rank - b.rank,
+        ...getColumnSearchProps("rank")
+      },
+      {
         title: "店铺名",
         dataIndex: "shop_name",
-        ellipsis: true
+        ellipsis: true,
+        ...getColumnSearchProps("shop_name")
       },
       {
         title: "粉丝数",
         dataIndex: "fans_count",
-        width: 100
+        width: 100,
+        ...getColumnSearchProps("fans_count")
       },
       {
         title: "阅读数",
         dataIndex: "read_count",
-        width: 100
+        width: 100,
+        ...getColumnSearchProps("read_count")
       },
       {
         title: "商品点击率",
         dataIndex: "click_rate",
-        width: 110
+        width: 110,
+        ...getColumnSearchProps("click_rate")
       },
       {
         title: "支付转化率",
         dataIndex: "pay_conversion_rate",
-        width: 110
+        width: 110,
+        ...getColumnSearchProps("pay_conversion_rate")
       },
       {
         title: "成交金额",
         dataIndex: "gmv",
-        width: 110
+        width: 110,
+        ...getColumnSearchProps("gmv")
       },
       {
         title: "获取日期",
         dataIndex: "fetch_date",
         width: 110,
-        render: (value) => <Tag>{value}</Tag>
+        render: (value) => <Tag>{value}</Tag>,
+        ...getColumnSearchProps("fetch_date")
       },
       {
         title: "入库时间",
         dataIndex: "created_at",
-        width: 180
+        width: 180,
+        ...getColumnSearchProps("created_at")
       }
     ],
-    []
+    [getColumnSearchProps]
   );
 
   const fetchData = async (
