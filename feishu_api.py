@@ -41,6 +41,23 @@ def _validate_rows(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     return normalized
 
 
+def _parse_page(param: str | None, default: int = 1) -> int:
+    try:
+        value = int(param) if param is not None else default
+        return max(1, value)
+    except Exception:
+        return default
+
+
+def _parse_page_size(param: str | None, default: int = 20, max_size: int = 200) -> int:
+    try:
+        value = int(param) if param is not None else default
+        value = max(1, value)
+        return min(value, max_size)
+    except Exception:
+        return default
+
+
 @app.after_request
 def _add_cors_headers(response):
     # 允许来自网页（https://ark.xiaohongshu.com）和扩展的跨域访问本地接口
@@ -117,6 +134,75 @@ def db_only_account_rank() -> Any:
         rows = _validate_rows(payload)  # type: ignore[arg-type]
         inserted = storage_sqlite.insert_account_rows(rows, SQLITE_PATH)
         return jsonify({"ok": True, "inserted": inserted})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/note_rank", methods=["GET"])
+def api_note_rank() -> Any:
+    page = _parse_page(request.args.get("page"))
+    page_size = _parse_page_size(request.args.get("page_size"))
+    q = request.args.get("q") or None
+    fetch_date_from = request.args.get("fetch_date_from") or None
+    fetch_date_to = request.args.get("fetch_date_to") or None
+
+    try:
+        items, total = storage_sqlite.list_note_rows(
+            SQLITE_PATH,
+            q=q,
+            fetch_date_from=fetch_date_from,
+            fetch_date_to=fetch_date_to,
+            page=page,
+            page_size=page_size,
+        )
+        return jsonify({"ok": True, "data": {"items": items, "total": total}})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/account_rank", methods=["GET"])
+def api_account_rank() -> Any:
+    page = _parse_page(request.args.get("page"))
+    page_size = _parse_page_size(request.args.get("page_size"))
+    q = request.args.get("q") or None
+    fetch_date_from = request.args.get("fetch_date_from") or None
+    fetch_date_to = request.args.get("fetch_date_to") or None
+
+    try:
+        items, total = storage_sqlite.list_account_rows(
+            SQLITE_PATH,
+            q=q,
+            fetch_date_from=fetch_date_from,
+            fetch_date_to=fetch_date_to,
+            page=page,
+            page_size=page_size,
+        )
+        return jsonify({"ok": True, "data": {"items": items, "total": total}})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@app.route("/api/audit_log", methods=["GET"])
+def api_audit_log() -> Any:
+    page = _parse_page(request.args.get("page"))
+    page_size = _parse_page_size(request.args.get("page_size"))
+
+    action = request.args.get("action") or None
+    detail_q = request.args.get("detail_q") or None
+    created_from = request.args.get("created_from") or None
+    created_to = request.args.get("created_to") or None
+
+    try:
+        items, total = storage_sqlite.list_audit_logs(
+            SQLITE_PATH,
+            action=action,
+            detail_q=detail_q,
+            created_from=created_from,
+            created_to=created_to,
+            page=page,
+            page_size=page_size,
+        )
+        return jsonify({"ok": True, "data": {"items": items, "total": total}})
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 500
 

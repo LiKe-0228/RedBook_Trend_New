@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable
+from typing import List, Tuple
 
 DB_PATH = Path("data/xhs_rank.db")
 
@@ -33,6 +34,7 @@ def init_db_if_needed(db_path: Path = DB_PATH) -> None:
   """Create SQLite file and tables if they do not exist."""
   _ensure_db_dir(db_path)
   with sqlite3.connect(db_path) as conn:
+    conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute(
       """
       CREATE TABLE IF NOT EXISTS note_rank (
@@ -178,3 +180,119 @@ def insert_account_rows(
     )
     conn.commit()
   return len(payload)
+
+
+def _paginate_and_total(conn: sqlite3.Connection, base_sql: str, params: Tuple[Any, ...], page: int, page_size: int) -> Tuple[List[sqlite3.Row], int]:
+  """Execute paginated query and return rows plus total count."""
+  offset = (page - 1) * page_size
+  paginated_sql = base_sql + " LIMIT ? OFFSET ?"
+  cursor = conn.execute(paginated_sql, params + (page_size, offset))
+  rows = cursor.fetchall()
+  total = conn.execute("SELECT COUNT(1) FROM (" + base_sql + ")", params).fetchone()[0]
+  return rows, total
+
+
+def list_note_rows(
+  db_path: Path = DB_PATH,
+  q: str | None = None,
+  fetch_date_from: str | None = None,
+  fetch_date_to: str | None = None,
+  page: int = 1,
+  page_size: int = 20,
+) -> Tuple[List[Dict[str, Any]], int]:
+  """List note_rank rows with simple filters and pagination."""
+  init_db_if_needed(db_path)
+  with sqlite3.connect(db_path) as conn:
+    conn.row_factory = sqlite3.Row
+    filters = []
+    params: Tuple[Any, ...] = tuple()
+
+    base_sql = "SELECT * FROM note_rank WHERE 1=1"
+
+    if q:
+      filters.append(" AND (title LIKE ? OR nickname LIKE ?)")
+      params += (f"%{q}%", f"%{q}%")
+    if fetch_date_from:
+      filters.append(" AND fetch_date >= ?")
+      params += (fetch_date_from,)
+    if fetch_date_to:
+      filters.append(" AND fetch_date <= ?")
+      params += (fetch_date_to,)
+
+    order_sql = " ORDER BY fetch_date DESC, created_at DESC"
+    base_sql += "".join(filters) + order_sql
+
+    rows, total = _paginate_and_total(conn, base_sql, params, page, page_size)
+    return [dict(r) for r in rows], total
+
+
+def list_account_rows(
+  db_path: Path = DB_PATH,
+  q: str | None = None,
+  fetch_date_from: str | None = None,
+  fetch_date_to: str | None = None,
+  page: int = 1,
+  page_size: int = 20,
+) -> Tuple[List[Dict[str, Any]], int]:
+  """List account_rank rows with simple filters and pagination."""
+  init_db_if_needed(db_path)
+  with sqlite3.connect(db_path) as conn:
+    conn.row_factory = sqlite3.Row
+    filters = []
+    params: Tuple[Any, ...] = tuple()
+
+    base_sql = "SELECT * FROM account_rank WHERE 1=1"
+
+    if q:
+      filters.append(" AND (shop_name LIKE ?)")
+      params += (f"%{q}%",)
+    if fetch_date_from:
+      filters.append(" AND fetch_date >= ?")
+      params += (fetch_date_from,)
+    if fetch_date_to:
+      filters.append(" AND fetch_date <= ?")
+      params += (fetch_date_to,)
+
+    order_sql = " ORDER BY fetch_date DESC, created_at DESC"
+    base_sql += "".join(filters) + order_sql
+
+    rows, total = _paginate_and_total(conn, base_sql, params, page, page_size)
+    return [dict(r) for r in rows], total
+
+
+def list_audit_logs(
+  db_path: Path = DB_PATH,
+  action: str | None = None,
+  detail_q: str | None = None,
+  created_from: str | None = None,
+  created_to: str | None = None,
+  page: int = 1,
+  page_size: int = 20,
+) -> Tuple[List[Dict[str, Any]], int]:
+  """List audit_log rows with simple filters and pagination."""
+  init_db_if_needed(db_path)
+  with sqlite3.connect(db_path) as conn:
+    conn.row_factory = sqlite3.Row
+    filters = []
+    params: Tuple[Any, ...] = tuple()
+
+    base_sql = "SELECT * FROM audit_log WHERE 1=1"
+
+    if action:
+      filters.append(" AND action = ?")
+      params += (action,)
+    if detail_q:
+      filters.append(" AND detail LIKE ?")
+      params += (f"%{detail_q}%",)
+    if created_from:
+      filters.append(" AND created_at >= ?")
+      params += (created_from,)
+    if created_to:
+      filters.append(" AND created_at <= ?")
+      params += (created_to,)
+
+    order_sql = " ORDER BY created_at DESC"
+    base_sql += "".join(filters) + order_sql
+
+    rows, total = _paginate_and_total(conn, base_sql, params, page, page_size)
+    return [dict(r) for r in rows], total
