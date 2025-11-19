@@ -17,18 +17,20 @@ function normalizeText(text) {
 }
 
 // 获取“逻辑上的获取日期”（只有日期，不含时间）
-// 规则：如果当前时间 < 10:00，则视为前一天的数据；否则视为当天的数据
+// 规则：按东八区时间，如果当前时间 < 10:00，则视为前一天的数据；否则视为当天的数据
 function getLogicalFetchDate() {
   const now = new Date();
-  const adjusted = new Date(now);
+  // 统一按东八区处理，避免本地时区影响日期判断
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60 * 1000;
+  const cst = new Date(utcMs + 8 * 60 * 60 * 1000); // UTC+8
 
-  if (now.getHours() < 10) {
-    adjusted.setDate(adjusted.getDate() - 1);
+  if (cst.getHours() < 10) {
+    cst.setDate(cst.getDate() - 1);
   }
 
-  const yyyy = adjusted.getFullYear();
-  const mm = String(adjusted.getMonth() + 1).padStart(2, "0");
-  const dd = String(adjusted.getDate()).padStart(2, "0");
+  const yyyy = cst.getFullYear();
+  const mm = String(cst.getMonth() + 1).padStart(2, "0");
+  const dd = String(cst.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
@@ -294,11 +296,23 @@ function collectAccountRankFromDom() {
 
     const fansEl =
       accountCell?.querySelector(".user-fans") ||
-      accountCell?.querySelector(".anchor-fans");
+      accountCell?.querySelector(".anchor-fans") ||
+      accountCell?.querySelector(".fans") ||
+      accountCell?.querySelector("[class*='fans']");
+
     let fansCount = "";
     if (fansEl) {
       const raw = (fansEl.innerText || fansEl.textContent || "").trim();
       fansCount = raw.replace(/粉丝/g, "").trim();
+    } else if (accountCell) {
+      // 兜底：直接从单元格文本中提取“粉丝 xxx”
+      const fallbackText = (accountCell.innerText || accountCell.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim();
+      const m = fallbackText.match(/粉丝[:：]?\s*([\d,.\w万W]+)/);
+      if (m && m[1]) {
+        fansCount = m[1].trim();
+      }
     }
 
     const readCount =
@@ -631,6 +645,7 @@ function ensureSidePanel() {
       <button id="xhs-note-rank-btn-collect" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">采集内容当前页</button>
       <button id="xhs-note-rank-btn-download" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">导出内容 CSV</button>
       <button id="xhs-note-rank-btn-upload" style="flex:0 0 100%;max-width:100%";padding:3px 6px;font-size:12px;cursor:pointer;">上传内容榜到飞书</button>
+      <button id="xhs-note-rank-btn-upload-db" style="flex:0 0 100%;max-width:100%";padding:3px 6px;font-size:12px;cursor:pointer;">仅保存内容榜到本地库</button>
     </div>
     <div style="margin-bottom:8px;">
       <button id="xhs-note-rank-btn-clear" style="width:100%;padding:3px 6px;font-size:12px;cursor:pointer;">清空内容缓存</button>
@@ -644,6 +659,7 @@ function ensureSidePanel() {
       <button id="xhs-account-rank-btn-collect" style="flex:1.5 0 120px;padding:3px 6px;font-size:12px;cursor:pointer;">采集成交榜账号当前页</button>
       <button id="xhs-account-rank-btn-download" style="flex:1 0 90px;padding:3px 6px;font-size:12px;cursor:pointer;">导出账号 CSV</button>
       <button id="xhs-account-rank-btn-upload" style="flex:0 0 100%;max-width:100%";padding:3px 6px;font-size:12px;cursor:pointer;">上传账号榜到飞书</button>
+      <button id="xhs-account-rank-btn-upload-db" style="flex:0 0 100%;max-width:100%";padding:3px 6px;font-size:12px;cursor:pointer;">仅保存账号榜到本地库</button>
     </div>
     <div style="margin-bottom:4px;">
       <button id="xhs-account-rank-btn-clear" style="width:100%;padding:3px 6px;font-size:12px;cursor:pointer;">清空账号缓存</button>
@@ -854,4 +870,3 @@ if (document.readyState === "loading") {
     adjustScrollButtonsOrder();
   }
 })();
-

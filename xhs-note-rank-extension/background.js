@@ -51,4 +51,3 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // 异步响应
   return true;
 });
-

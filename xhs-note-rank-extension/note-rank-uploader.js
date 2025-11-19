@@ -132,6 +132,45 @@
       });
     }
 
+    const noteUploadDbBtn = document.getElementById(
+      "xhs-note-rank-btn-upload-db"
+    );
+    if (noteUploadDbBtn && !noteUploadDbBtn.dataset.xhsBound) {
+      noteUploadDbBtn.dataset.xhsBound = "1";
+      noteUploadDbBtn.addEventListener("click", () => {
+        setStatus("正在将内容榜保存到本地数据库...");
+        chrome.storage.local.get(NOTE_STORAGE_KEY, (data) => {
+          const rows = data[NOTE_STORAGE_KEY] || [];
+          if (!rows.length) {
+            setStatus("暂无可保存的内容榜数据，请先采集。");
+            return;
+          }
+
+          chrome.runtime.sendMessage(
+            { type: "xhs-upload", endpoint: "db_only_note_rank", rows },
+            (res) => {
+              if (chrome.runtime.lastError) {
+                console.error(
+                  "xhs-upload note-db error:",
+                  chrome.runtime.lastError
+                );
+                setStatus("无法连接扩展后台，请在扩展页重新加载后重试。");
+                return;
+              }
+              if (!res || res.ok !== true) {
+                setStatus(
+                  (res && res.error) ||
+                    "保存内容榜到本地数据库失败，请检查本地服务。"
+                );
+                return;
+              }
+              setStatus(`已保存内容榜，本地库新增 ${res.inserted || 0} 条记录。`);
+            }
+          );
+        });
+      });
+    }
+
     const accountUploadBtn = document.getElementById(
       "xhs-account-rank-btn-upload"
     );
@@ -167,6 +206,45 @@
               setStatus(
                 `已上传账号榜，多维表新增 ${res.uploaded || 0} 条记录。`
               );
+            }
+          );
+        });
+      });
+    }
+
+    const accountUploadDbBtn = document.getElementById(
+      "xhs-account-rank-btn-upload-db"
+    );
+    if (accountUploadDbBtn && !accountUploadDbBtn.dataset.xhsBound) {
+      accountUploadDbBtn.dataset.xhsBound = "1";
+      accountUploadDbBtn.addEventListener("click", () => {
+        setStatus("正在将账号榜保存到本地数据库...");
+        chrome.storage.local.get(ACCOUNT_STORAGE_KEY, (data) => {
+          const rows = data[ACCOUNT_STORAGE_KEY] || [];
+          if (!rows.length) {
+            setStatus("暂无可保存的账号榜数据，请先采集。");
+            return;
+          }
+
+          chrome.runtime.sendMessage(
+            { type: "xhs-upload", endpoint: "db_only_account_rank", rows },
+            (res) => {
+              if (chrome.runtime.lastError) {
+                console.error(
+                  "xhs-upload account-db error:",
+                  chrome.runtime.lastError
+                );
+                setStatus("无法连接扩展后台，请在扩展页重新加载后重试。");
+                return;
+              }
+              if (!res || res.ok !== true) {
+                setStatus(
+                  (res && res.error) ||
+                    "保存账号榜到本地数据库失败，请检查本地服务。"
+                );
+                return;
+              }
+              setStatus(`已保存账号榜，本地库新增 ${res.inserted || 0} 条记录。`);
             }
           );
         });
