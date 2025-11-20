@@ -167,10 +167,6 @@ function collectNoteRankFromDom() {
     const getByIndex = (idx) =>
       idx >= 0 && idx < cells.length ? getCellText(cells[idx]) : "";
 
-    const noteLinkEl =
-      noteCell?.querySelector("a[href*='/note/'], a[href*='/notes/']");
-    const noteUrl = noteLinkEl ? noteLinkEl.href : "";
-
     return {
       title,
       nickname,
@@ -179,7 +175,6 @@ function collectNoteRankFromDom() {
       clickRate: getByIndex(columnIndex.clickRate),
       payConversionRate: getByIndex(columnIndex.payConversionRate),
       gmv: getByIndex(columnIndex.gmv),
-      noteUrl,
       fetchDate
     };
   });

@@ -11,7 +11,6 @@ def main() -> None:
         "payConversionRate": "10%-20%",
         "gmv": "￥1000-3000",
         "fetchDate": "2025-11-18",
-        "noteUrl": "https://www.xiaohongshu.com/test-note-1",
     }
 
     print("=== 上传 1 条内容榜测试数据 ===")
@@ -33,4 +32,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
