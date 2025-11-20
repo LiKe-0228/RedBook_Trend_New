@@ -207,6 +207,32 @@ def api_audit_log() -> Any:
         return jsonify({"ok": False, "error": str(exc)}), 500
 
 
+@app.route("/api/rank_change", methods=["GET"])
+def api_rank_change() -> Any:
+    view_type = request.args.get("type", "note").strip().lower()
+    if view_type not in {"note", "account"}:
+        return jsonify({"ok": False, "error": "type 参数必须为 note 或 account"}), 400
+
+    try:
+        if view_type == "note":
+            current_date, previous_date, items = storage_sqlite.get_note_rank_changes(SQLITE_PATH)
+        else:
+            current_date, previous_date, items = storage_sqlite.get_account_rank_changes(SQLITE_PATH)
+
+        return jsonify(
+            {
+                "ok": True,
+                "data": {
+                    "items": items,
+                    "current_date": current_date,
+                    "previous_date": previous_date,
+                },
+            }
+        )
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 if __name__ == "__main__":
     # 仅在本机使用，不开启对外访问
     app.run(host="127.0.0.1", port=API_PORT)

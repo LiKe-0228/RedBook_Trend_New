@@ -50,3 +50,21 @@ export type AccountRankItem = {
   fetch_date: string;
   created_at: string;
 };
+
+export type RankChangeItem = {
+  key: string;
+  title?: string;
+  nickname?: string;
+  shop_name?: string;
+  current_rank: number;
+  previous_rank?: number | null;
+  rank_change?: number | null;
+  current?: Record<string, string | null>;
+  previous?: Record<string, string | null> | null;
+};
+
+export type RankChangeResponse = {
+  items: RankChangeItem[];
+  current_date: string | null;
+  previous_date: string | null;
+};

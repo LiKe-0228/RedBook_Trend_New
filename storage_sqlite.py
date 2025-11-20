@@ -4,7 +4,7 @@ import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple, Optional
 
 DB_PATH = Path("data/xhs_rank.db")
 
@@ -310,3 +310,166 @@ def list_audit_logs(
     total = conn.execute(count_sql, params_tuple).fetchone()[0]
 
     return [dict(r) for r in rows], total
+
+
+def _latest_fetch_dates(conn: sqlite3.Connection, table: str) -> List[str]:
+  cursor = conn.execute(
+    f"""
+    SELECT DISTINCT fetch_date
+    FROM {table}
+    WHERE fetch_date IS NOT NULL AND fetch_date != ''
+    ORDER BY fetch_date DESC
+    LIMIT 2
+    """
+  )
+  rows = [row[0] for row in cursor.fetchall()]
+  return rows
+
+
+def _fetch_ranked_rows(
+  conn: sqlite3.Connection,
+  table: str,
+  fetch_date: str,
+  columns: List[str],
+  key_builder,
+) -> Dict[str, Dict[str, Any]]:
+  select_cols = ", ".join(columns)
+  cursor = conn.execute(
+    f"""
+    SELECT {select_cols}
+    FROM {table}
+    WHERE fetch_date = ?
+    ORDER BY created_at ASC
+    """,
+    (fetch_date,),
+  )
+  ranked: Dict[str, Dict[str, Any]] = {}
+  for idx, row in enumerate(cursor.fetchall(), start=1):
+    record = dict(row)
+    record["rank"] = idx
+    key = key_builder(record)
+    record["__key"] = key
+    if key not in ranked:
+      ranked[key] = record
+  return ranked
+
+
+def _build_rank_change_items(
+  current_rows: Dict[str, Dict[str, Any]],
+  previous_rows: Dict[str, Dict[str, Any]],
+  label_fields: List[str],
+  metric_fields: List[str],
+) -> List[Dict[str, Any]]:
+  items: List[Dict[str, Any]] = []
+  sorted_current = sorted(current_rows.values(), key=lambda r: r["rank"])
+  for record in sorted_current:
+    key = record.get("__key", "")
+    prev = previous_rows.get(key)
+    item: Dict[str, Any] = {
+      "key": key,
+      "current_rank": record["rank"],
+      "previous_rank": prev["rank"] if prev else None,
+      "rank_change": (prev["rank"] - record["rank"]) if prev else None,
+      "current": {field: record.get(field) for field in metric_fields},
+      "previous": {field: prev.get(field) for field in metric_fields} if prev else None,
+    }
+    for field in label_fields:
+      item[field] = record.get(field)
+    if prev:
+      for field in label_fields:
+        prev_value = prev.get(field)
+        if item.get(f"previous_{field}") is None:
+          item[f"previous_{field}"] = prev_value
+    items.append(item)
+  return items
+
+
+def get_note_rank_changes(
+  db_path: Path = DB_PATH,
+) -> Tuple[Optional[str], Optional[str], List[Dict[str, Any]]]:
+  init_db_if_needed(db_path)
+  with sqlite3.connect(db_path) as conn:
+    conn.row_factory = sqlite3.Row
+    dates = _latest_fetch_dates(conn, "note_rank")
+    if len(dates) < 2:
+      return (dates[0] if dates else None, None, [])
+
+    current_date, previous_date = dates[0], dates[1]
+    columns = [
+      "title",
+      "nickname",
+      "publish_time",
+      "read_count",
+      "click_rate",
+      "pay_conversion_rate",
+      "gmv",
+      "fetch_date",
+      "created_at",
+    ]
+    current_rows = _fetch_ranked_rows(
+      conn,
+      "note_rank",
+      current_date,
+      columns,
+      lambda r: f"{r.get('title','')}__{r.get('nickname','')}",
+    )
+    previous_rows = _fetch_ranked_rows(
+      conn,
+      "note_rank",
+      previous_date,
+      columns,
+      lambda r: f"{r.get('title','')}__{r.get('nickname','')}",
+    )
+
+    items = _build_rank_change_items(
+      current_rows,
+      previous_rows,
+      ["title", "nickname"],
+      ["publish_time", "read_count", "click_rate", "pay_conversion_rate", "gmv"],
+    )
+    return current_date, previous_date, items
+
+
+def get_account_rank_changes(
+  db_path: Path = DB_PATH,
+) -> Tuple[Optional[str], Optional[str], List[Dict[str, Any]]]:
+  init_db_if_needed(db_path)
+  with sqlite3.connect(db_path) as conn:
+    conn.row_factory = sqlite3.Row
+    dates = _latest_fetch_dates(conn, "account_rank")
+    if len(dates) < 2:
+      return (dates[0] if dates else None, None, [])
+
+    current_date, previous_date = dates[0], dates[1]
+    columns = [
+      "shop_name",
+      "fans_count",
+      "read_count",
+      "click_rate",
+      "pay_conversion_rate",
+      "gmv",
+      "fetch_date",
+      "created_at",
+    ]
+    current_rows = _fetch_ranked_rows(
+      conn,
+      "account_rank",
+      current_date,
+      columns,
+      lambda r: r.get("shop_name", ""),
+    )
+    previous_rows = _fetch_ranked_rows(
+      conn,
+      "account_rank",
+      previous_date,
+      columns,
+      lambda r: r.get("shop_name", ""),
+    )
+
+    items = _build_rank_change_items(
+      current_rows,
+      previous_rows,
+      ["shop_name"],
+      ["fans_count", "read_count", "click_rate", "pay_conversion_rate", "gmv"],
+    )
+    return current_date, previous_date, items
